@@ -19,3 +19,10 @@ We want to enforce the following consistency semantics:
 Some design details to get you started:
 * Store your list of contacts in a specific key in Redis as a list, for instance, `contacts`
 * Store each contact in an easy-to find place, based on the name of the contact, for example, `contacts/Jonathan Bell`
+
+Running (from inside of VM):
+```
+mvn package
+java -jar lock-server/target/lab5-lock-server-0.0.1-SNAPSHOT.jar
+java -jar addressbook-client/target/lab5-addressbook-client-0.0.1-SNAPSHOT.jar
+```
