@@ -28,16 +28,7 @@ public class LockServer implements ILockServer {
 	
 	@Override
 	public void lockPerson(String name) throws RemoteException {
-		Lock lock = null;
-		synchronized (locksForPeople) {
-			lock = locksForPeople.get(name);
-			if(lock == null)
-			{
-				lock = new StampedLock().asReadLock();
-				locksForPeople.put(name, lock);
-			}
-		}
-		lock.lock();
+		listLock.lock(); //TODO make per-person
 
 	}
 

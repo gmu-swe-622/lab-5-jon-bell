@@ -22,7 +22,7 @@ public class AddressBookMain {
 		pool = new JedisPool("localhost", 6379);
 		jedis = pool.getResource();
 		try {
-			System.out.println("conencted");
+			System.out.println("Connected.");
 			Registry registry = LocateRegistry.getRegistry("localhost", 9000);
 			lockServer = (ILockServer) registry.lookup(ILockServer.LOCK_SERVER_RMI_NAME);
 		} catch (Exception e) {
@@ -30,9 +30,15 @@ public class AddressBookMain {
 
 		}
 		Scanner s = new Scanner(System.in);
+		System.out.println("Options: 1 (quit) 2 (list) 3 (append note field) 4 (add)");
 		scannerLoop: while (s.hasNextLine()) {
-			System.out.println("Options: 1 (quit) 2 (list) 3 (append note field) 4 (add)");
-			int opt = s.nextInt();
+
+			int opt = 0;
+			try {
+				opt = Integer.valueOf(s.nextLine());
+			} catch (Throwable t) {
+				System.out.println("Invalid input.");
+			}
 			switch (opt) {
 			case 1:
 				break scannerLoop;
@@ -56,14 +62,9 @@ public class AddressBookMain {
 				addPerson(name, email, note);
 				break;
 			}
+			System.out.println("Options: 1 (quit) 2 (list) 3 (append note field) 4 (add)");
 		}
 		s.close();
-		try {
-			addPerson("Jonathan Bell", "bellj@gmu.edu", "Is a prof");
-		} catch (IllegalArgumentException ex) {
-			ex.printStackTrace();
-		}
-		listPeople();
 		jedis.close();
 		pool.close();
 	}
