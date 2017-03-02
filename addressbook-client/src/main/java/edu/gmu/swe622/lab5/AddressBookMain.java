@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -16,7 +17,8 @@ public class AddressBookMain {
 
 	private static Jedis jedis;
 	private static ILockServer lockServer;
-
+	private static LockServerWrapper lockServerWrapper;
+	
 	public static void main(String[] args) {
 		JedisPool pool = null;
 		pool = new JedisPool("localhost", 6379);
@@ -25,6 +27,7 @@ public class AddressBookMain {
 			System.out.println("Connected.");
 			Registry registry = LocateRegistry.getRegistry("localhost", 9000);
 			lockServer = (ILockServer) registry.lookup(ILockServer.LOCK_SERVER_RMI_NAME);
+			lockServerWrapper = new LockServerWrapper(lockServer);
 		} catch (Exception e) {
 			System.err.println("Client exception connecting to lock server: " + e.toString());
 
@@ -94,21 +97,29 @@ public class AddressBookMain {
 		Set<String> people = jedis.smembers("/contacts");
 		for (String key : people) {
 			List<String> person = jedis.hmget("/contacts/" + key, new String[] { "name", "email", "notes" });
-			System.out.println(person.get(0) + ": " + person.get(1) + "\n\t" + person.get(2));
+			System.out.println("KEY: " + key + ": " +person.get(0) + ": " + person.get(1) + "\n\t" + person.get(2));
 		}
 	}
 
+
 	static void editPerson(String name, String newNote) {
-		try {
-			lockServer.lockPerson(name);
+//		try {
+//			lockServer.lockPerson(name);
+			
+			int id = lockServerWrapper.getLockOnPersonIfDontHave(name, 0);
+			System.out.println("Got ID" + id);
 			try {
 				// Update user's notes by appending a new note to the string
+				String appendedNote = jedis.hget("/contacts/"+name, "notes")
+						+"\n"+newNote;
+				jedis.hset("/contacts/"+name, "notes", appendedNote);
 			} finally {
-				lockServer.unlockPerson(name);
+//				lockServer.unlockPerson(name);
+				lockServerWrapper.unlockPersonIfHave(name, id);
 			}
-		} catch (RemoteException e) {
+//		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//			e.printStackTrace();
+//		}
 	}
 }

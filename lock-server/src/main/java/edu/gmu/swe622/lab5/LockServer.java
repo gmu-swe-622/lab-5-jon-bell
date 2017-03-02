@@ -22,27 +22,49 @@ public class LockServer implements ILockServer {
 	public LockServer() {
 	}
 
-	private Lock listLock = new StampedLock().asReadLock();
+	private StampedLock listLock = new StampedLock();
 
+
+	
 	static HashMap<String, Lock> locksForPeople = new HashMap<String, Lock>();
 	
 	@Override
 	public void lockPerson(String name) throws RemoteException {
-		listLock.lock(); //TODO make per-person
+		Lock lock = null;
+		//Tries to lock "A": it can get it
+		//Tries to lock "A": it waits
 
+		synchronized (locksForPeople) {		
+			lock = locksForPeople.get(name);
+			if(lock == null)
+			{
+				lock = new StampedLock().asReadLock();
+				locksForPeople.put(name, lock);
+			}
+		}
+		lock.lock();//Client 2 is waiting here
 	}
 
 	@Override
 	public void unlockPerson(String name) throws RemoteException {
-		listLock.unlock(); //TODO make per-person
+		Lock lock = null;
+		synchronized (locksForPeople) {		
+			lock = locksForPeople.get(name);
+			if(lock == null)
+			{
+				throw new IllegalStateException("Tried to unlock " + name + " but it's not locked!");
+			}
+		}
+		lock.unlock();
+
 	}
 	@Override
 	public void lockList(boolean forWrite) throws RemoteException {
-		listLock.lock(); //TODO be a read-write lock
+		listLock.asReadLock().lock(); //TODO be a read-write lock
 	}
 	@Override
 	public void unLockList(boolean fromWrite) throws RemoteException {
-		listLock.unlock(); //TODO be a read-write lock		
+		listLock.asReadLock().unlock(); //TODO be a read-write lock		
 	}
 
 	public static Registry createAndBind(int port) throws Exception {
